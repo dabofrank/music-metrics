@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<meta http-equiv="Content-Type" content="text/html;charset=UTF-8" />
+	<title>基础使用示例</title>
+	<script type="text/javascript" src="js/graphvis.min.js"></script>
+</head>
+
+<body>
+	<!-- 画布区域，需要指定width和height样式属性 -->
+	<div id="graph-container" style="width: calc(100% - 4px);height: calc(100vh - 18px);border: 1px solid #b7b2ea;border-radius: 5px;"></div>
+
+	<script type="text/javascript">
+		//初始化GraphVis客户端对象
+		var graphvis = new GraphVis({
+			container: document.getElementById('graph-container'), //包裹层dom
+			licenseKey: 'online-demo', // 授权licenseKey
+			config: {  //全局统一样式配置
+				node: { //节点的默认配置
+					label: { //标签配置
+						show: true, //是否显示
+						color: '50,50,50', //字体颜色
+						font: 'normal 14px Arial', //字体大小及类型
+						textPosition: 'Bottom_Center', //文字位置 Middle_Center,Bottom_Center
+						textOffsetY: 5 //文字纵向偏移量
+					},
+					shape: 'circle', //节点形状 circle,square,star,polygon
+					color: '225,55,135', //节点颜色
+					borderColor: '180,150,230',//边框颜色
+					borderWidth: 0, //边框宽度
+					size: 60, //节点半径大小
+					selected: { //选中时的样式设置
+						borderColor: '50,50,230', //选中时边框颜色
+						borderWidth: 5, //选中是的外部边框宽度
+						showShadow: true, //是否展示阴影
+						shadowColor: '145,85,245', //选中是的阴影颜色
+						shadowBlur: 30 //阴影的范围大小
+					}
+				},
+				link: { //连线的默认配置
+					label: { //连线标签
+						show: true, //是否显示
+						color: '20,20,20', //字体颜色
+						font: 'normal 13px Arial', //字体大小及类型
+						background: '255,255,255'
+					},
+					lineType: 'straight', //连线类型,curver,vlink,hlink,vbezier,hbezier
+					lineWidth: 2, //连线宽度
+					showArrow: true, //显示连线箭头
+					arrowType: 'triangle',//箭头样式arrow,triangle
+					selected: { //选中时的样式设置
+						color: '50,50,230' //选中时的颜色
+					}
+				},
+				highLightNeiber: false, //相邻节点高度标志
+				wheelZoom: 0.9 //滚轮缩放开关，不使用时不设置
+			}
+		});
+
+		//标准格式示例数据
+		var demoData = {
+			nodes: [
+				{ id: 1000, label: '微信:22266688', type: 'weixin', style: { y: 300, x: 200,fillColor:'125,225,135' } },
+				{ id: 2000, label: 'QQ:88888888', type: 'qq', style: { y: 100, x: 400,fontColor:'120,120,230',fillColor:'125,125,235' } },
+				{ id: 3000, label: '手机号\n13955566478', type: 'phone', style: { y: 300, x: 600,fillColor:'25,125,35' } },
+				{ id: 4000, label: '张某某\n(主要涉案人)', type: 'people', tags: ['主'], style: { y: 100, x: 800,fillColor:'235,55,55',font:'bold 14px Aripal' } },
+				{ id: 5000, label: '李某某\n(同现案发地)', type: 'people', style: { y: 300, x: 1000 } },
+				{ id: 6000, label: '手机号\n1826544778', type: 'phone', style: { y: -100, x: 600 } }
+			],
+			links: [
+			{ id: 'e-10', source: 1000, target: 2000, type: 'vitual', label: '虚拟关系', style: { strokeColor: '20,20,220' } },
+			{ id: 'e-20', source: 2000, target: 3000, type: 'vitual', label: '虚拟关系' },
+			{ id: 'e-30', source: 3000, target: 4000, type: 'vitual', label: '虚拟关系' },
+			{ id: 'e-40', source: 4000, target: 5000, type: 'friend', label: '好友' },
+			{ id: 'e-50', source: 4000, target: 6000, type: 'vitual', label: '使用', style: { lineDash: [3, 8, 3] } },
+			{ id: 'e-60', source: 3000, target: 1000, type: 'vitual', label: '登录', style: { strokeColor: '220,20,20' } },
+			{ id: 'e-70', source: 5000, target: 3000, type: 'vitual', label: '曾使用' },
+			{ id: 'e-80', source: 2000, target: 6000, type: 'vitual', label: '关联', style: { lineWidth: 4 } },
+			{ id: 'e-90', source: 2000, target: 4000, type: 'vitual', label: '所属'}
+			]
+		};
+		graphvis.addGraph(demoData); //添加图数据
+		graphvis.zoomFit(); //适应窗口大小
+	</script>
+</body>
+
+</html>

@@ -1,0 +1,177 @@
+<template>
+    <div :id="graphPanelId" style="width:100%;height:100%;display: block;background-color: #f1f5e4;">
+    </div>
+</template>
+
+<script>
+    import GraphVis from '@/assets/libs/graphvis.esm.min.js';
+    import { getDefaultConfig, LicenseKey } from '@/assets/configs/tupuGraphConfig';
+
+	export default {
+		name: 'activeGraph',
+		data() {
+			return {
+                graphPanelId:'gp-'+new Date().getTime(),
+                graphVis: null,
+            }
+		},
+        mounted() {
+            this.$nextTick(() => {
+                this.initGraph();
+                this.loadGraphData();
+            })
+		},
+		methods: {
+            // 创建全局绘图客户端对象
+            initGraph() {
+                this.graphVis = new GraphVis({
+                    container:document.getElementById(this.graphPanelId),
+                    licenseKey:LicenseKey,
+                    config:getDefaultConfig()
+                });
+                this.graphVis.setDragHideLine(true); //拖拽时隐藏连线
+                //this.graphVis.setSmoothWheelMode(false);//鼠标平滑模式，提升性能
+                this.graphVis.setShowDetailScale(0.1);//展示细节的比例
+                this.graphVis.setZoomRange([0.1, 10]);//缩放区间
+
+                this.bindEvent(); //注册节点双击事件
+            },
+            bindEvent(){
+                var graphVis = this.graphVis;
+                var self = this;
+
+                //布局算法参数，可将用到的算法参数都设置至此
+                var layoutConfig = {
+                    nodeRadius: 30,  //图中可视化化配置的节点大小
+                    minCircleRadius: 100, //最小扩展半径
+                    graphMargin: 100, //扩展图直接的间隔距离
+                    animate: true, //是否开启动画
+
+                    'friction': 0.9,  //排斥力
+                    'linkDistance': 100, // 连线长度
+                    'linkStrength': 0.03, //连线强度
+                    'charge': -120,  //吸引力
+                    'gravity': 0.015, // 中心引力
+                    'scale': 2 //圆形的布局缩放比例
+                };
+
+                //双击动态添加扩展数据
+                graphVis.registEventListener('node', 'dblClick', function (event, node) {
+                    //判断节点如果还没有展开过，则执行展开，并增加展开标记
+                    if (!node.expendFlag) {
+                        var searchData = self.generateData(node); //模拟接口查询关系数据
+
+                        //记录当前的位置
+                        node.oldX = node.cx;
+                        node.oldY = node.cy; 
+
+                        //基于某个节点展开的扩展追加，指定中心节点，可以设定布局及参数
+                        graphVis.activeAddData(
+                            node,searchData,
+                            'fastForce',
+                            layoutConfig,
+                            function (newNodes, newLinks) {
+                                console.log('扩展数据结束',newNodes);
+                            }
+                        );
+
+                        //节点标记为【展开】
+                        node.expendFlag = true;
+                    } else {
+                        //节点展开标记恢复为【未展开】
+                        node.expendFlag = false;
+
+                        self.contractChildNode(node,);//收起叶子节点
+                    }
+                });
+            },
+            loadGraphData(){
+                const demoData = {
+                    nodes: [
+                        { id: 1000, label: '中心点\n双击节点展开', style:{fillColor:'250,120,120',y: 300, x: 200} }
+                    ],
+                    links: []
+                };
+                this.graphVis.addGraph(demoData);
+                this.graphVis.zoomFit();
+                setTimeout(()=>{this.graphVis.zoomFit()},200);
+            },
+            generateData(node) {
+                var sourceId = node.id;
+
+                var nodeNum = Math.round(Math.random() * 50);
+                var newNodes = [];
+                var newLinks = [];
+                for (var i = 0; i < nodeNum; i++) {
+                    var nodeId = Math.round(Math.random() * 1000000) + 1;
+                    var color = this.graphVis.randomColor();
+                    newNodes.push({ id: nodeId, label: '' + nodeId,style:{fillColor:color} });
+
+                    var edgeId = Math.round(Math.random() * 1000000) + 1;
+                    newLinks.push({
+                        id: 'e-' + edgeId, source: sourceId, target: nodeId,style:{strokeColor:color}
+                    });
+                }
+                return { nodes: newNodes, links: newLinks };
+            },
+            contractChildNode(node) {
+                var graphVis = this.graphVis;
+                var childNodes = graphVis.findOneLevelNodes(node);
+
+                //隐藏所有子节点的连线
+                childNodes.forEach(function (n) {
+                    ((n.outLinks || []).concat(n.inLinks || [])).forEach((link) => {
+                        link.visible = false;
+                    });
+                });
+
+                let targetX = node.oldX, targetY = node.oldY;
+
+                //画布中心回到节点原始位置
+                graphVis.moveNodeToCenter({x: targetX,y: targetY}, 1000, false);
+
+                //目标节点回到原始位置
+                graphVis.createBaseAnimate({
+                    targets: node,
+                    duration: 900,
+                    easing: 'easeOutQuad',
+                    cx: targetX,
+                    cy: targetY
+                });
+
+                //子节点回到原始位置后删除
+                graphVis.createBaseAnimate({
+                    targets: [...childNodes],
+                    duration: 1000,
+                    easing: 'easeOutQuad',
+                    alpha: 0,
+                    cx: targetX,
+                    cy: targetY,
+                    begin: function (anim) {
+                        graphVis.switchAnimate(true);
+                    }
+                }).finished.then(function () {
+                    graphVis.switchAnimate(false);
+
+                    graphVis.deleteNodes(childNodes);//删除子节点
+                });
+            }
+        },
+        destroyed(){
+            if(this.graphVis){
+                this.graphVis.destroy();
+            }
+        }
+	}
+</script>
+
+<style scoped>
+.preview{
+
+    :deep(.el-dialog__body){
+        padding: 0px;
+        margin: 0;
+    }
+}
+
+</style>
